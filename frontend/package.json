@@ -1,0 +1,40 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.7",
+    "@stacks/blockchain-api-client": "^7.10.0",
+    "@stacks/connect": "^7.10.0",
+    "@stacks/network": "^6.13.1",
+    "@stacks/transactions": "^6.13.1",
+    "@tanstack/react-query": "^5.84.1",
+    "@types/papaparse": "^5.3.16",
+    "autoprefixer": "^10.4.21",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.537.0",
+    "next": "15.4.6",
+    "papaparse": "^5.5.3",
+    "pino-pretty": "^13.1.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,39 @@
+[project]
+name = "securevault-stacks"
+description = "Multi-signature wallet system for Stacks blockchain"
+authors = ["SecureVault Team"]
+telemetry = false
+cache_dir = "./.cache"
+requirements = []
+
+[contracts.sip-010-trait]
+path = "contracts/sip-010-trait.clar"
+
+[contracts.multisig]
+path = "contracts/multisig.clar"
+depends_on = ["sip-010-trait"]
+
+[contracts.multisig-factory]
+path = "contracts/multisig-factory.clar"
+depends_on = ["multisig"]
+
+[contracts.example-sip010-token]
+path = "contracts/example-sip010-token.clar"
+depends_on = ["sip-010-trait"]
+
+[contracts.cngn-stacks-token]
+path = "contracts/cngn-stacks-token.clar"
+depends_on = ["sip-010-trait"]
+
+[repl]
+costs_version = 2
+parser_version = 2
+
+[repl.analysis]
+passes = ["check_checker"]
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false

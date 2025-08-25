@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-card: #ffffff;
+  --color-card-foreground: #171717;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #171717;
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #171717;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #171717;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #2563eb;
+  --color-success: #22c55e;
+  --color-success-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+  
+  --radius: 0.5rem;
+  
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+    --color-card: #0a0a0a;
+    --color-card-foreground: #ededed;
+    --color-popover: #0a0a0a;
+    --color-popover-foreground: #ededed;
+    --color-primary: #3b82f6;
+    --color-primary-foreground: #0a0a0a;
+    --color-secondary: #1e293b;
+    --color-secondary-foreground: #ededed;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-accent: #1e293b;
+    --color-accent-foreground: #ededed;
+    --color-destructive: #dc2626;
+    --color-destructive-foreground: #ededed;
+    --color-border: #1e293b;
+    --color-input: #1e293b;
+    --color-ring: #3b82f6;
+    --color-success: #16a34a;
+    --color-success-foreground: #ededed;
+    --color-warning: #d97706;
+    --color-warning-foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .btn-primary {
+    background: linear-gradient(to right, #2563eb, #1d4ed8);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+    transform: translateY(0);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(to right, #1d4ed8, #1e40af);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+  }
+  
+  .btn-secondary {
+    background: white;
+    border: 2px solid #2563eb;
+    color: #2563eb;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    background: #eff6ff;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    padding: 1.5rem;
+    transition: all 0.2s;
+  }
+  
+  .card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px #2563eb;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(to bottom right, #eff6ff, white, #f0fdf4);
+  }
+  
+  .success-gradient {
+    background: linear-gradient(to right, #22c55e, #16a34a);
+  }
+  
+  .warning-gradient {
+    background: linear-gradient(to right, #f59e0b, #d97706);
+  }
+}
