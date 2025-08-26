@@ -1,8 +1,44 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Building2, Users, CheckCircle, Globe, TrendingUp, Eye } from 'lucide-react';
+import { Building2, Users, CheckCircle, Globe, TrendingUp, Eye, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import { useStacks } from './providers';
+
+// Stacks Connect Button Component
+function StacksConnectButton() {
+  const { isSignedIn, connectWallet, disconnect, userSession } = useStacks();
+
+  if (isSignedIn) {
+    const userData = userSession.loadUserData();
+    const address = userData.profile?.stxAddress?.mainnet || userData.profile?.stxAddress?.testnet;
+    const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
+
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="bg-green-100 border border-green-200 text-green-800 px-4 py-2 rounded-xl flex items-center space-x-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="font-medium">{shortAddress}</span>
+        </div>
+        <button
+          onClick={disconnect}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-colors"
+        >
+          Disconnect
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={connectWallet}
+      className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+    >
+      <Wallet className="w-5 h-5" />
+      <span>Connect Wallet</span>
+    </button>
+  );
+}
 
 export default function Home() {
   const features = [
@@ -13,8 +49,8 @@ export default function Home() {
     },
     {
       icon: Globe,
-      title: 'cNGN Native Support',
-      description: 'Built specifically for cNGN token management with real-time NGN conversion'
+      title: 'STX & Bitcoin Native',
+      description: 'Built specifically for STX and Bitcoin asset management with Stacks integration'
     },
     {
       icon: Users,
@@ -29,8 +65,8 @@ export default function Home() {
   ];
 
   const benefits = [
-    'Multi-signature security for cNGN assets',
-    'Bulk payroll and vendor payments',
+    'Multi-signature security for STX and Bitcoin assets',
+    'Bulk payroll and vendor payments on Stacks',
     'Department-based access controls',
     'Open-source and fully transparent'
   ];
@@ -83,7 +119,7 @@ export default function Home() {
               <Link href="/docs" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">Documentation</Link>
             </nav>
 
-            <ConnectButton />
+            <StacksConnectButton />
           </div>
         </div>
       </header>
@@ -94,26 +130,26 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8 py-24">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-6">
-              <span className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold border border-green-200">
-                🇳🇬 Made for Nigerian Enterprises
+              <span className="px-4 py-2 bg-orange-100 text-orange-800 rounded-full text-sm font-semibold border border-orange-200">
+                ₿ Built on Stacks & Bitcoin
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-8">
-              <span className="bg-gradient-to-r from-blue-800 via-blue-600 to-indigo-700 bg-clip-text text-transparent">
-                Enterprise cNGN
+              <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-yellow-600 bg-clip-text text-transparent">
+                Enterprise Bitcoin
               </span>
               <span className="block text-gray-900 mt-2">Treasury Management</span>
             </h1>
             <p className="text-xl md:text-2xl mb-12 text-gray-700 max-w-4xl mx-auto leading-relaxed">
-              Open-source multi-signature treasury solution built specifically for Nigerian enterprises. 
-              Securely manage <strong className="text-green-600">cNGN assets</strong> with enterprise-grade 
+              Open-source multi-signature treasury solution built on Stacks blockchain. 
+              Securely manage <strong className="text-orange-600">Bitcoin and STX assets</strong> with enterprise-grade 
               multi-party computation and full regulatory compliance.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-              <Link href="/wallet" className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xl px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-xl hover:shadow-2xl">
+              <Link href="/wallet" className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white text-xl px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-xl hover:shadow-2xl">
                 Launch Enterprise Treasury
               </Link>
-              <Link href="/docs" className="bg-white border-2 border-gray-300 hover:border-blue-400 text-gray-800 text-xl px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl">
+              <Link href="/docs" className="bg-white border-2 border-gray-300 hover:border-orange-400 text-gray-800 text-xl px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl">
                 View Documentation
               </Link>
             </div>
@@ -129,7 +165,7 @@ export default function Home() {
                 <div className="text-sm text-gray-600">Security</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">cNGN</div>
+                <div className="text-2xl font-bold text-gray-900">Stacks</div>
                 <div className="text-sm text-gray-600">Native</div>
               </div>
             </div>
@@ -145,15 +181,15 @@ export default function Home() {
               Built for Nigerian Enterprise Needs
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Every feature designed with Nigerian enterprises in mind - from cNGN support to regulatory compliance
+              Every feature designed with Nigerian enterprises in mind - from Bitcoin support to regulatory compliance
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div key={index} className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-200">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <feature.icon className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-gradient-to-r from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <feature.icon className="w-8 h-8 text-orange-600" />
                 </div>
                 <h3 className="text-xl font-bold mb-4 text-gray-900">{feature.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{feature.description}</p>
@@ -171,7 +207,7 @@ export default function Home() {
               Trusted by Nigerian Enterprises
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From fintech startups to established enterprises, secure your cNGN treasury operations
+              From fintech startups to established enterprises, secure your Bitcoin treasury operations
             </p>
           </div>
 
@@ -197,13 +233,13 @@ export default function Home() {
               Enterprise Treasury in 3 Steps
             </h2>
             <p className="text-xl text-gray-600">
-              Simple setup, maximum security for your cNGN assets
+              Simple setup, maximum security for your Bitcoin and STX assets
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12">
             <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <div className="w-20 h-20 bg-gradient-to-r from-orange-600 to-orange-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
                 <span className="text-3xl font-bold text-white">1</span>
               </div>
               <h3 className="text-2xl font-bold mb-4 text-gray-900">Create Treasury</h3>
@@ -216,9 +252,9 @@ export default function Home() {
               <div className="w-20 h-20 bg-gradient-to-r from-purple-600 to-violet-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
                 <span className="text-3xl font-bold text-white">2</span>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-gray-900">Manage cNGN</h3>
+              <h3 className="text-2xl font-bold mb-4 text-gray-900">Manage Assets</h3>
               <p className="text-gray-600 leading-relaxed text-lg">
-                Deposit cNGN assets and manage payroll, vendor payments, and operational expenses
+                Deposit Bitcoin and STX assets and manage payroll, vendor payments, and operational expenses
               </p>
             </div>
 
@@ -245,7 +281,7 @@ export default function Home() {
               </h2>
               <p className="text-xl text-gray-600 mb-10 leading-relaxed">
                 Built with Nigerian regulatory requirements and business practices in mind. 
-                Open-source, transparent, and designed for enterprise scale.
+                Open-source, transparent, and designed for enterprise scale on Stacks blockchain.
               </p>
               
               <div className="space-y-5">
@@ -260,7 +296,7 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-10 border border-blue-200/50">
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-100 rounded-3xl p-10 border border-orange-200/50">
               <h3 className="text-2xl font-bold text-gray-900 mb-8">Enterprise Security Features</h3>
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-5 bg-white rounded-xl shadow-sm">
@@ -268,7 +304,7 @@ export default function Home() {
                   <div className="w-4 h-4 bg-green-500 rounded-full"></div>
                 </div>
                 <div className="flex items-center justify-between p-5 bg-white rounded-xl shadow-sm">
-                  <span className="font-semibold text-gray-900">cNGN Native Integration</span>
+                  <span className="font-semibold text-gray-900">Stacks Native Integration</span>
                   <div className="w-4 h-4 bg-green-500 rounded-full"></div>
                 </div>
                 <div className="flex items-center justify-between p-5 bg-white rounded-xl shadow-sm">
@@ -282,21 +318,21 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white relative overflow-hidden">
+      <section className="py-24 bg-gradient-to-r from-orange-600 via-orange-700 to-yellow-700 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative max-w-4xl mx-auto text-center px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
             Ready to Secure Your Enterprise Treasury?
           </h2>
-          <p className="text-xl mb-12 text-blue-100 leading-relaxed">
-            Join Nigerian enterprises already using SecureVault for secure cNGN treasury management. 
-            Open-source, transparent, and built for scale.
+          <p className="text-xl mb-12 text-orange-100 leading-relaxed">
+            Join Nigerian enterprises already using SecureVault for secure Bitcoin treasury management. 
+            Open-source, transparent, and built for scale on Stacks blockchain.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/wallet" className="bg-white text-blue-800 font-bold py-4 px-10 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-xl text-lg">
+            <Link href="/wallet" className="bg-white text-orange-800 font-bold py-4 px-10 rounded-xl hover:bg-orange-50 transition-all duration-200 shadow-xl text-lg">
               Create Your Treasury
             </Link>
-            <Link href="/docs" className="border-2 border-white text-white font-bold py-4 px-10 rounded-xl hover:bg-white hover:text-blue-800 transition-all duration-200 text-lg">
+            <Link href="/docs" className="border-2 border-white text-white font-bold py-4 px-10 rounded-xl hover:bg-white hover:text-orange-800 transition-all duration-200 text-lg">
               Read Documentation
             </Link>
           </div>
@@ -309,7 +345,7 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-10">
             <div>
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-700 rounded-xl flex items-center justify-center">
                   <Building2 className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -319,7 +355,7 @@ export default function Home() {
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Open-source enterprise treasury management for Nigerian businesses. 
-                Secure, transparent, and built for cNGN assets.
+                Secure, transparent, and built for Bitcoin and STX assets on Stacks.
               </p>
             </div>
             
@@ -357,8 +393,8 @@ export default function Home() {
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400">&copy; 2024 SecureVault. Open-source enterprise treasury solution.</p>
             <div className="flex items-center space-x-2 mt-4 md:mt-0">
-              <span className="text-gray-400">🇳🇬</span>
-              <span className="text-gray-400">Built for Nigerian Enterprises</span>
+              <span className="text-gray-400">₿</span>
+              <span className="text-gray-400">Built on Stacks & Bitcoin</span>
             </div>
           </div>
         </div>

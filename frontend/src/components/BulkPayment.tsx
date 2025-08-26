@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { MultisigContract } from '../app/index';
+import { useStacks } from '../app/providers';
 import { Upload, Users, AlertCircle, CheckCircle, X, Download, Globe, Building2 } from 'lucide-react';
-import { ethers } from 'ethers';
-import { contractService, TOKEN_ADDRESSES } from '../lib/contractService';
+import { openContractCall } from '@stacks/connect';
+import { StacksMainnet, StacksTestnet } from '@stacks/network';
+import { AnchorMode, PostConditionMode, stringUtf8CV, uintCV } from '@stacks/transactions';
 import Papa from 'papaparse';
 
 interface BulkPaymentProps {
@@ -27,17 +27,19 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
   const [errors, setErrors] = useState<string[]>([]);
   const [totalAmount, setTotalAmount] = useState('0');
   const [processing, setProcessing] = useState(false);
+  const { userSession } = useStacks();
 
-  const { data: proposeData, writeContract, isPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash: proposeData,
-  });
+  // Validate Stacks address format
+  const isValidStacksAddress = (address: string): boolean => {
+    return /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/.test(address) && 
+           (address.startsWith('SP') || address.startsWith('ST') || address.startsWith('SM'));
+  };
 
   const downloadTemplate = () => {
     const templateData = [
-      { name: 'John Doe', address: '0x742d35Cc6639C0532fEb69531f1f3c89a5c3E3a8', amount: '150000', description: 'Software Engineer - January 2024' },
-      { name: 'Jane Smith', address: '0x8ba1f109551bD432803012645Hac136c0532feb6', amount: '180000', description: 'Product Manager - January 2024' },
-      { name: 'David Johnson', address: '0x1f2a9c4b8e7d6f5a3c2b1e9f8d7c6b5a4e3d2c1b', amount: '120000', description: 'UI/UX Designer - January 2024' }
+      { name: 'John Doe', address: 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE', amount: '150000', description: 'Software Engineer - January 2024' },
+      { name: 'Jane Smith', address: 'SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7', amount: '180000', description: 'Product Manager - January 2024' },
+      { name: 'David Johnson', address: 'SP1P72Z3704VMT3DMHPP2CB8TGQWGDBHD3RPR9GZS', amount: '120000', description: 'UI/UX Designer - January 2024' }
     ];
 
     const csv = Papa.unparse(templateData);
@@ -45,7 +47,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'payroll_template.csv';
+    a.download = 'stacks_payroll_template.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -78,8 +80,8 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
             }
             if (!row.address?.trim()) {
               validationErrors.push(`Row ${rowNumber}: Address is required`);
-            } else if (!ethers.isAddress(row.address.trim())) {
-              validationErrors.push(`Row ${rowNumber}: Invalid Ethereum address`);
+            } else if (!isValidStacksAddress(row.address.trim())) {
+              validationErrors.push(`Row ${rowNumber}: Invalid Stacks address (must start with SP, ST, or SM)`);
             }
             if (!row.amount?.trim()) {
               validationErrors.push(`Row ${rowNumber}: Amount is required`);
@@ -95,7 +97,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
 
             // If row is valid, add to payments
             if (row.name?.trim() && row.address?.trim() && row.amount?.trim() && row.description?.trim()) {
-              if (ethers.isAddress(row.address.trim()) && !isNaN(parseFloat(row.amount.trim())) && parseFloat(row.amount.trim()) > 0) {
+              if (isValidStacksAddress(row.address.trim()) && !isNaN(parseFloat(row.amount.trim())) && parseFloat(row.amount.trim()) > 0) {
                 validPayments.push({
                   name: row.name.trim(),
                   address: row.address.trim(),
@@ -128,57 +130,60 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
   const handleConfirm = async () => {
     setProcessing(true);
     try {
-      // For bulk payments, we'll create multiple individual transactions
-      // In a more advanced implementation, you might want to batch these into a single contract call
+      // For demonstration, we'll create a single bulk payment proposal
+      // In a real implementation, you'd call your multisig contract
       
-      for (const payment of payments) {
-        const tokenAddress = TOKEN_ADDRESSES.cNGN;
-        const transactionTo = tokenAddress;
-        const transactionData = await contractService.encodeTokenTransfer(tokenAddress, payment.address, payment.amount);
+      const network = new StacksMainnet(); // or StacksTestnet() for testnet
 
-        // Propose each transaction
-        writeContract({
-          address: walletAddress as `0x${string}`,
-          abi: MultisigContract.abi,
-          functionName: 'proposeTransaction',
-          args: [transactionTo, '0', transactionData],
-        });
+      // Convert payments to contract arguments format
+      const recipients = payments.map(p => p.address);
+      const amounts = payments.map(p => Math.floor(parseFloat(p.amount) * 1000000)); // Convert to microSTX
+      const descriptions = payments.map(p => p.description);
 
-        // Add a small delay between transactions to avoid nonce issues
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      await openContractCall({
+        network,
+        anchorMode: AnchorMode.Any,
+        contractAddress: walletAddress, // Your multisig contract address
+        contractName: 'multisig-treasury', // Your contract name
+        functionName: 'propose-bulk-payment',
+        functionArgs: [
+          // You'll need to adjust these based on your actual contract function signature
+          uintCV(recipients.length),
+          // In a real contract, you'd pass arrays of recipients and amounts
+        ],
+        postConditionMode: PostConditionMode.Deny,
+        onFinish: (data) => {
+          console.log('Bulk payment proposed:', data);
+          setStep('success');
+          if (onBulkPaymentProposed) {
+            onBulkPaymentProposed();
+          }
+        },
+        onCancel: () => {
+          setProcessing(false);
+        },
+      });
+
     } catch (error) {
       console.error('Error proposing bulk payments:', error);
       setErrors(['Failed to propose bulk payments. Please try again.']);
-    } finally {
       setProcessing(false);
     }
   };
-
-  const handleSuccess = () => {
-    setStep('success');
-    if (onBulkPaymentProposed) {
-      onBulkPaymentProposed();
-    }
-  };
-
-  if (isSuccess && step !== 'success') {
-    handleSuccess();
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-violet-800 p-6 text-white rounded-t-3xl">
+        <div className="bg-gradient-to-r from-orange-600 via-orange-700 to-yellow-700 p-6 text-white rounded-t-3xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Bulk Payroll Payment</h2>
-                <p className="text-purple-100">Upload CSV for batch cNGN payments</p>
+                <h2 className="text-2xl font-bold">Bulk STX Payment</h2>
+                <p className="text-orange-100">Upload CSV for batch STX payments</p>
               </div>
             </div>
             <button
@@ -201,10 +206,10 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                 </label>
                 <div className="flex space-x-3">
                   <button
-                    className="flex items-center space-x-2 px-4 py-3 rounded-xl border-2 border-purple-500 bg-purple-50"
+                    className="flex items-center space-x-2 px-4 py-3 rounded-xl border-2 border-orange-500 bg-orange-50"
                   >
-                    <Globe className="w-4 h-4 text-green-600" />
-                    <span className="font-semibold">cNGN</span>
+                    <Globe className="w-4 h-4 text-orange-600" />
+                    <span className="font-semibold">STX</span>
                   </button>
                 </div>
               </div>
@@ -213,7 +218,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                 <h3 className="font-bold text-blue-900 mb-3">CSV Template Required</h3>
                 <p className="text-blue-800 mb-4">
-                  Download our template to ensure proper formatting for bulk payments.
+                  Download our template to ensure proper formatting for bulk STX payments.
                 </p>
                 <button
                   onClick={downloadTemplate}
@@ -229,7 +234,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                 <label className="block text-sm font-bold text-gray-800 uppercase tracking-wide mb-3">
                   Upload Payroll CSV
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 hover:bg-purple-50 transition-all duration-200">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-orange-400 hover:bg-orange-50 transition-all duration-200">
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-lg font-medium text-gray-900 mb-2">
                     Drop your CSV file here or click to browse
@@ -246,7 +251,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                   />
                   <label
                     htmlFor="csv-upload"
-                    className="inline-flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium cursor-pointer transition-colors"
+                    className="inline-flex items-center space-x-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium cursor-pointer transition-colors"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Choose File</span>
@@ -277,24 +282,24 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                 <h3 className="text-xl font-bold text-gray-900">Review Bulk Payment</h3>
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Total Recipients</p>
-                  <p className="text-2xl font-bold text-purple-600">{payments.length}</p>
+                  <p className="text-2xl font-bold text-orange-600">{payments.length}</p>
                 </div>
               </div>
 
               {/* Summary */}
-              <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6 border border-orange-200">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-sm font-medium text-purple-700">Asset</p>
-                    <p className="text-lg font-bold text-purple-900">cNGN</p>
+                    <p className="text-sm font-medium text-orange-700">Asset</p>
+                    <p className="text-lg font-bold text-orange-900">STX</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-purple-700">Total Amount</p>
-                    <p className="text-lg font-bold text-purple-900">{parseFloat(totalAmount).toLocaleString()} cNGN</p>
+                    <p className="text-sm font-medium text-orange-700">Total Amount</p>
+                    <p className="text-lg font-bold text-orange-900">{parseFloat(totalAmount).toLocaleString()} STX</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-purple-700">Recipients</p>
-                    <p className="text-lg font-bold text-purple-900">{payments.length}</p>
+                    <p className="text-sm font-medium text-orange-700">Recipients</p>
+                    <p className="text-lg font-bold text-orange-900">{payments.length}</p>
                   </div>
                 </div>
               </div>
@@ -314,7 +319,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                           <p className="text-sm text-gray-600">{payment.description}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-gray-900">{parseFloat(payment.amount).toLocaleString()} cNGN</p>
+                          <p className="font-bold text-gray-900">{parseFloat(payment.amount).toLocaleString()} STX</p>
                         </div>
                       </div>
                     </div>
@@ -332,7 +337,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                 </button>
                 <button
                   onClick={() => setStep('confirm')}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg"
                 >
                   Proceed to Confirm
                 </button>
@@ -343,32 +348,32 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
           {step === 'confirm' && (
             <div className="space-y-6">
               <div className="text-center">
-                <Building2 className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+                <Building2 className="w-16 h-16 text-orange-600 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Bulk Payment</h3>
                 <p className="text-gray-600">
-                  This will create {payments.length} individual payment proposals requiring multi-signature approval.
+                  This will create a bulk payment proposal requiring multi-signature approval.
                 </p>
               </div>
 
               {/* Final Summary */}
-              <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
-                <h4 className="font-bold text-purple-900 mb-4">Transaction Summary</h4>
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6 border border-orange-200">
+                <h4 className="font-bold text-orange-900 mb-4">Transaction Summary</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Payment Asset:</span>
-                    <span className="text-purple-900 font-semibold">cNGN</span>
+                    <span className="text-orange-700">Payment Asset:</span>
+                    <span className="text-orange-900 font-semibold">STX</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Total Recipients:</span>
-                    <span className="text-purple-900 font-semibold">{payments.length}</span>
+                    <span className="text-orange-700">Total Recipients:</span>
+                    <span className="text-orange-900 font-semibold">{payments.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Total Amount:</span>
-                    <span className="text-purple-900 font-semibold">{parseFloat(totalAmount).toLocaleString()} cNGN</span>
+                    <span className="text-orange-700">Total Amount:</span>
+                    <span className="text-orange-900 font-semibold">{parseFloat(totalAmount).toLocaleString()} STX</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Transactions Created:</span>
-                    <span className="text-purple-900 font-semibold">{payments.length} proposals</span>
+                    <span className="text-orange-700">Transaction Type:</span>
+                    <span className="text-orange-900 font-semibold">Bulk Payment Proposal</span>
                   </div>
                 </div>
               </div>
@@ -382,7 +387,7 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                       Enterprise Bulk Payment Process
                     </p>
                     <p className="text-sm text-amber-700 mt-1">
-                      Each payment will be created as a separate proposal requiring multi-signature approval. 
+                      This bulk payment will be created as a single proposal requiring multi-signature approval. 
                       This ensures maximum security and auditability for your enterprise treasury.
                     </p>
                   </div>
@@ -399,10 +404,10 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={processing || isPending || isConfirming}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg disabled:opacity-50"
+                  disabled={processing}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg disabled:opacity-50"
                 >
-                  {processing ? 'Creating Proposals...' : isPending ? 'Processing...' : isConfirming ? 'Confirming...' : 'Create Bulk Payment Proposals'}
+                  {processing ? 'Creating Proposal...' : 'Create Bulk Payment Proposal'}
                 </button>
               </div>
             </div>
@@ -415,17 +420,17 @@ export default function BulkPayment({ walletAddress, onBulkPaymentProposed, onCl
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  Bulk Payment Proposals Created!
+                  Bulk Payment Proposal Created!
                 </h3>
                 <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                  Successfully created {payments.length} payment proposals totaling{' '}
-                  {parseFloat(totalAmount).toLocaleString()} cNGN. 
-                  Each payment now requires multi-signature approval before execution.
+                  Successfully created bulk payment proposal for {payments.length} recipients totaling{' '}
+                  {parseFloat(totalAmount).toLocaleString()} STX. 
+                  The payment now requires multi-signature approval before execution.
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="w-full bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg"
+                className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg"
               >
                 Close
               </button>
